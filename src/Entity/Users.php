@@ -3,6 +3,8 @@
 namespace App\Entity;
 
 use App\Repository\UsersRepository;
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
 use Symfony\Component\Security\Core\User\UserInterface;
@@ -47,6 +49,26 @@ class Users implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column(length: 255)]
     #[Groups('infos_users')]
     private ?string $username = null;
+
+    /**
+     * @var Collection<int, Baskets>
+     */
+    #[ORM\OneToMany(targetEntity: Baskets::class, mappedBy: 'user')]
+    #[Groups('relation_user_baskets')]
+    private Collection $baskets;
+
+    /**
+     * @var Collection<int, BasketArticle>
+     */
+    #[ORM\OneToMany(targetEntity: BasketArticle::class, mappedBy: 'associated_user')]
+    private Collection $basketArticles;
+
+
+    public function __construct()
+    {
+        $this->baskets = new ArrayCollection();
+        $this->basketArticles = new ArrayCollection();
+    }
 
     public function getId(): ?int
     {
@@ -154,6 +176,66 @@ class Users implements UserInterface, PasswordAuthenticatedUserInterface
     public function setUsername(string $username): static
     {
         $this->username = $username;
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, Baskets>
+     */
+    public function getBaskets(): Collection
+    {
+        return $this->baskets;
+    }
+
+    public function addBasket(Baskets $basket): static
+    {
+        if (!$this->baskets->contains($basket)) {
+            $this->baskets->add($basket);
+            $basket->setUser($this);
+        }
+
+        return $this;
+    }
+
+    public function removeBasket(Baskets $basket): static
+    {
+        if ($this->baskets->removeElement($basket)) {
+            // set the owning side to null (unless already changed)
+            if ($basket->getUser() === $this) {
+                $basket->setUser(null);
+            }
+        }
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, BasketArticle>
+     */
+    public function getBasketArticles(): Collection
+    {
+        return $this->basketArticles;
+    }
+
+    public function addBasketArticle(BasketArticle $basketArticle): static
+    {
+        if (!$this->basketArticles->contains($basketArticle)) {
+            $this->basketArticles->add($basketArticle);
+            $basketArticle->setAssociatedUser($this);
+        }
+
+        return $this;
+    }
+
+    public function removeBasketArticle(BasketArticle $basketArticle): static
+    {
+        if ($this->basketArticles->removeElement($basketArticle)) {
+            // set the owning side to null (unless already changed)
+            if ($basketArticle->getAssociatedUser() === $this) {
+                $basketArticle->setAssociatedUser(null);
+            }
+        }
 
         return $this;
     }
